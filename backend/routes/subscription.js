@@ -35,4 +35,23 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// GET /api/subscriptions/me
+router.get('/me', auth, async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const subscription = await Subscription.findOne({ userId, status: 'ACTIVE' })
+      .populate('planId');
+
+    if (!subscription) {
+      return res.status(404).json({ message: 'No active subscription found' });
+    }
+
+    res.json({ subscription });
+  } catch (err) {
+    res.status(500).json({ message: 'Error retrieving subscription', error: err.message });
+  }
+});
+
+
 module.exports = router;
