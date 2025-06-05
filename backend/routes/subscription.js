@@ -53,5 +53,38 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
+// PUT /api/subscriptions/update
+router.put('/update', auth, async (req, res) => {
+  const userId = req.user.userId;
+  const { planId } = req.body;
+
+  try {
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      return res.status(404).json({ message: 'Plan not found' });
+    }
+
+    const subscription = await Subscription.findOne({ userId, status: 'ACTIVE' });
+    if (!subscription) {
+      return res.status(404).json({ message: 'No active subscription to update' });
+    }
+
+    const newStartDate = new Date();
+    const newEndDate = new Date();
+    newEndDate.setDate(newStartDate.getDate() + plan.duration);
+
+    subscription.planId = planId;
+    subscription.startDate = newStartDate;
+    subscription.endDate = newEndDate;
+
+    await subscription.save();
+
+    res.json({ message: 'Subscription updated successfully', subscription });
+
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating subscription', error: err.message });
+  }
+});
+
 
 module.exports = router;
