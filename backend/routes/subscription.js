@@ -40,14 +40,24 @@ router.get('/me', auth, async (req, res) => {
   const userId = req.user.userId;
 
   try {
-    const subscription = await Subscription.findOne({ userId, status: 'ACTIVE' })
+    // Fetch the most recent subscription regardless of status
+    let subscription = await Subscription.findOne({ userId })
+      .sort({ endDate: -1 })
       .populate('planId');
 
     if (!subscription) {
-      return res.status(404).json({ message: 'No active subscription found' });
+      return res.status(404).json({ message: 'No subscription found' });
+    }
+
+    // Auto-expire if subscription is active and expired
+    const now = new Date();
+    if (subscription.status === 'ACTIVE' && subscription.endDate < now) {
+      subscription.status = 'EXPIRED';
+      await subscription.save();
     }
 
     res.json({ subscription });
+
   } catch (err) {
     res.status(500).json({ message: 'Error retrieving subscription', error: err.message });
   }
