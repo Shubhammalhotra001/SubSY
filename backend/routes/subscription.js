@@ -86,5 +86,27 @@ router.put('/update', auth, async (req, res) => {
   }
 });
 
+// PUT /api/subscriptions/cancel
+router.put('/cancel', auth, async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const subscription = await Subscription.findOne({ userId, status: 'ACTIVE' });
+
+    if (!subscription) {
+      return res.status(404).json({ message: 'No active subscription to cancel' });
+    }
+
+    subscription.status = 'CANCELLED';
+    await subscription.save();
+
+    res.json({ message: 'Subscription cancelled successfully', subscription });
+
+  } catch (err) {
+    res.status(500).json({ message: 'Error cancelling subscription', error: err.message });
+  }
+});
+
+
 
 module.exports = router;
